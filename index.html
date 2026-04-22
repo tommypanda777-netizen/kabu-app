@@ -41,9 +41,16 @@ header{display:none}
 .s-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text)}
 .divider{height:1px;background:var(--border);margin:8px 0}
 .pnl-row{display:flex;align-items:flex-end;gap:10px}
-.pnl-input-wrap{flex:1}
-.pnl-input-wrap label{font-size:10px;color:var(--text3);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em}
-.pnl-input-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-family:var(--mono);color:var(--text);outline:none;-webkit-appearance:none}
+.price-inputs{flex:1;display:flex;gap:6px}
+.price-input-wrap{flex:1;display:flex;flex-direction:column;gap:3px}
+.price-label-row{display:flex;align-items:center}
+.radio-toggle{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.radio-toggle input[type=radio]{display:none}
+.rb-box{width:12px;height:12px;border-radius:50%;border:1px solid #444;background:#111111;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.rb-box::after{content:'';display:none;width:6px;height:6px;border-radius:50%;background:#aaa}
+.radio-toggle input[type=radio]:checked + .rb-box{border-color:#aaa}
+.radio-toggle input[type=radio]:checked + .rb-box::after{display:block}
+.price-input-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 8px;font-family:var(--mono);outline:none;-webkit-appearance:none;text-align:right}
 .pnl-result{flex:1;text-align:right}
 .pnl-result .s-label{text-align:right}
 .pnl-amount{font-family:var(--mono);font-weight:500;color:var(--text)}
@@ -182,9 +189,29 @@ header{display:none}
         </div>
         <div class="divider"></div>
         <div class="pnl-row">
-          <div class="pnl-input-wrap">
-            <label>現在値</label>
-            <input type="number" inputmode="decimal" id="current-price" placeholder="" oninput="recalc()">
+          <div class="price-inputs">
+            <!-- ラジオ＋現在値 -->
+            <div class="price-input-wrap">
+              <div class="price-label-row">
+                <label class="radio-toggle" onclick="setPriceMode('current')">
+                  <input type="radio" name="price-mode" id="radio-current" value="current" checked>
+                  <span class="rb-box"></span>
+                  <span class="price-label-txt" id="label-current">現在値</span>
+                </label>
+              </div>
+              <input type="number" inputmode="decimal" id="current-price" placeholder="" oninput="recalc()">
+            </div>
+            <!-- ラジオ＋目標値 -->
+            <div class="price-input-wrap">
+              <div class="price-label-row">
+                <label class="radio-toggle" onclick="setPriceMode('target')">
+                  <input type="radio" name="price-mode" id="radio-target" value="target">
+                  <span class="rb-box"></span>
+                  <span class="price-label-txt" id="label-target">目標値</span>
+                </label>
+              </div>
+              <input type="number" inputmode="decimal" id="target-price" placeholder="" oninput="recalc()">
+            </div>
           </div>
           <div class="pnl-result">
             <div class="s-label">損益</div>
@@ -287,6 +314,9 @@ var DEFAULTS={
   colorAfterTax:'#f06060',
   colorAfterTaxMinus:'#3ecf7a',
   colorInput:'#e8e8ea',
+  colorInputOff:'#3a3a3a',
+  colorTarget:'#e8e8ea',
+  colorTargetOff:'#3a3a3a',
   colorSubtotal:'#55555c',
   colorRowInput:'#e8e8ea',
   colorRowPctPlus:'#3ecf7a',
@@ -298,6 +328,7 @@ var DEFAULTS={
   sizePnl:17,
   sizeAfterTax:25,
   sizeInput:17,
+  sizeTarget:17,
   sizeSubtotal:14,
   sizeRowInput:16,
   sizeRowPct:10,
@@ -348,7 +379,7 @@ function applyCfg(){
   document.getElementById('tot-cost').style.fontSize=cfg.sizeCost+'px';
   document.getElementById('pnl-amt').style.fontSize=cfg.sizePnl+'px';
   document.getElementById('pnl-after-tax').style.fontSize=cfg.sizeAfterTax+'px';
-  document.getElementById('current-price').style.fontSize=cfg.sizeInput+'px';
+  applyPriceInputStyles();
   // 計算行（CSS変数で一括）
   document.documentElement.style.setProperty('--row-input-size',cfg.sizeRowInput+'px');
   document.documentElement.style.setProperty('--row-input-color',cfg.colorRowInput);
@@ -381,12 +412,49 @@ function calcTotals(){
   return{cost:cost,qty:qty,avg:valid>0&&qty>0?cost/qty:null};
 }
 
+var priceMode='current'; // 'current' or 'target'
+
+function setPriceMode(mode){
+  priceMode=mode;
+  document.getElementById('radio-current').checked=(mode==='current');
+  document.getElementById('radio-target').checked=(mode==='target');
+  applyPriceInputStyles();
+  recalc();
+}
+
+function applyPriceInputStyles(){
+  var curInput=document.getElementById('current-price');
+  var tgtInput=document.getElementById('target-price');
+  var curLabel=document.getElementById('label-current');
+  var tgtLabel=document.getElementById('label-target');
+  if(priceMode==='current'){
+    curInput.style.color=cfg.colorInput;
+    curInput.style.fontSize=cfg.sizeInput+'px';
+    tgtInput.style.color=cfg.colorTargetOff;
+    tgtInput.style.fontSize=cfg.sizeTarget+'px';
+    curLabel.style.color=cfg.colorInput;
+    tgtLabel.style.color=cfg.colorTargetOff;
+  }else{
+    curInput.style.color=cfg.colorInputOff;
+    curInput.style.fontSize=cfg.sizeInput+'px';
+    tgtInput.style.color=cfg.colorTarget;
+    tgtInput.style.fontSize=cfg.sizeTarget+'px';
+    curLabel.style.color=cfg.colorInputOff;
+    tgtLabel.style.color=cfg.colorTarget;
+  }
+}
+
+function getActivePrice(){
+  if(priceMode==='current')return parseFloat(document.getElementById('current-price').value);
+  return parseFloat(document.getElementById('target-price').value);
+}
+
 function recalc(){
   var t=calcTotals();
   document.getElementById('avg').textContent=t.avg!==null?fmt(t.avg,0):'—';
   document.getElementById('tot-qty').textContent=t.qty>0?fmt(t.qty,0):'—';
   document.getElementById('tot-cost').textContent=t.cost>0?fmt(t.cost,0):'—';
-  var cur=parseFloat(document.getElementById('current-price').value);
+  var cur=getActivePrice();
   var pnlAmtEl=document.getElementById('pnl-amt');
   var pnlPctEl=document.getElementById('pnl-pct');
   var pnlAfterEl=document.getElementById('pnl-after-tax');
@@ -676,7 +744,10 @@ function buildSettingsUI(){
       {key:'colorPnl',label:'損益',type:'color'},
       {key:'colorAfterTax',label:'税引後（プラス）',type:'color'},
       {key:'colorAfterTaxMinus',label:'税引後（マイナス）',type:'color'},
-      {key:'colorInput',label:'現在値入力',type:'color'},
+      {key:'colorInput',label:'現在値（オン）',type:'color'},
+      {key:'colorInputOff',label:'現在値（オフ）',type:'color'},
+      {key:'colorTarget',label:'目標値（オン）',type:'color'},
+      {key:'colorTargetOff',label:'目標値（オフ）',type:'color'},
       {key:'colorRowInput',label:'計算行 入力値',type:'color'},
       {key:'colorSubtotal',label:'計算行 小計',type:'color'},
       {key:'colorRowPctPlus',label:'計算行 ％（プラス）',type:'color'},
@@ -689,6 +760,7 @@ function buildSettingsUI(){
       {key:'sizePnl',label:'損益',type:'size',min:12,max:36},
       {key:'sizeAfterTax',label:'税引後',type:'size',min:12,max:40},
       {key:'sizeInput',label:'現在値入力',type:'size',min:12,max:30},
+      {key:'sizeTarget',label:'目標値入力',type:'size',min:12,max:30},
       {key:'sizeRowInput',label:'計算行 入力値',type:'size',min:10,max:28},
       {key:'sizeSubtotal',label:'計算行 小計',type:'size',min:8,max:24},
       {key:'sizeRowPct',label:'計算行 ％',type:'size',min:8,max:20},
