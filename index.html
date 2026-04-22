@@ -650,7 +650,7 @@ function renderSaved(){
         +'<div class="saved-val-item"><div class="saved-val-label">平均単価</div><div class="saved-val-num">'+fmt(e.avg,0)+'</div></div>'
         +'<div class="saved-val-item"><div class="saved-val-label">合計数量</div><div class="saved-val-num">'+fmt(e.qty,0)+'</div></div>'
         +'<div class="saved-val-item"><div class="saved-val-label">損益</div><div class="saved-val-num">'+fmtS(e.pnl)+'</div></div>'
-        +'<div class="saved-val-item"><div class="saved-val-label">税引後</div><div class="saved-val-num '+(e.afterTax===null?'':e.afterTax>=0?'profit':'loss')+'">'+(e.afterTax!==null?fmtS(e.afterTax):'—')+'</div></div>'
+        +'<div class="saved-val-item"><div class="saved-val-label">税引後</div><div class="saved-val-num '+(e.afterTax===null?'':e.afterTax>=0?'loss':'profit')+'">'+(e.afterTax!==null?fmtS(e.afterTax):'—')+'</div></div>'
       +'</div></div>';
   }).join('');
   initDrag();
