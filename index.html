@@ -419,6 +419,7 @@ function setPriceMode(mode){
   document.getElementById('radio-current').checked=(mode==='current');
   document.getElementById('radio-target').checked=(mode==='target');
   applyPriceInputStyles();
+  saveSession();
   recalc();
 }
 
@@ -571,13 +572,18 @@ function confirmSave(){
   var name=document.getElementById('save-name-input').value.trim()||'パターン '+(getSaved().length+1);
   var t=calcTotals();
   var cur=parseFloat(document.getElementById('current-price').value);
+  var tgt=parseFloat(document.getElementById('target-price').value);
   var taxOn=document.getElementById('tax-on').checked;
   var taxRate=parseFloat(document.getElementById('tax-rate').value);
-  var pnl=(isFinite(cur)&&t.qty>0)?(cur-t.avg)*t.qty:null;
+  var activePrice=getActivePrice();
+  var pnl=(isFinite(activePrice)&&t.qty>0)?(activePrice-t.avg)*t.qty:null;
   var afterTax=(taxOn&&pnl!==null&&pnl>0&&isFinite(taxRate))?pnl*(1-taxRate/100):null;
   var s=getSaved();
   s.push({id:''+Date.now(),name:name,avg:t.avg,qty:t.qty,cost:t.cost,
-    cur:isFinite(cur)?cur:null,pnl:pnl,afterTax:afterTax,
+    cur:isFinite(cur)?cur:null,
+    targetPrice:isFinite(tgt)?tgt:null,
+    priceMode:priceMode,
+    pnl:pnl,afterTax:afterTax,
     taxOn:taxOn,taxRate:isFinite(taxRate)?taxRate:20.315,
     rows:JSON.parse(JSON.stringify(rows))});
   setSaved(s);setLastSavedId(s[s.length-1].id);closeSaveDialog();showToast('「'+name+'」を保存しました');
@@ -598,12 +604,17 @@ function overwriteSave(){
   askConfirm('「'+e.name+'」に上書き保存しますか？',function(){
     var t=calcTotals();
     var cur=parseFloat(document.getElementById('current-price').value);
+    var tgt=parseFloat(document.getElementById('target-price').value);
     var taxOn=document.getElementById('tax-on').checked;
     var taxRate=parseFloat(document.getElementById('tax-rate').value);
-    var pnl=(isFinite(cur)&&t.qty>0)?(cur-t.avg)*t.qty:null;
+    var activePrice=getActivePrice();
+    var pnl=(isFinite(activePrice)&&t.qty>0)?(activePrice-t.avg)*t.qty:null;
     var afterTax=(taxOn&&pnl!==null&&pnl>0&&isFinite(taxRate))?pnl*(1-taxRate/100):null;
     s[idx]=Object.assign({},s[idx],{avg:t.avg,qty:t.qty,cost:t.cost,
-      cur:isFinite(cur)?cur:null,pnl:pnl,afterTax:afterTax,
+      cur:isFinite(cur)?cur:null,
+      targetPrice:isFinite(tgt)?tgt:null,
+      priceMode:priceMode,
+      pnl:pnl,afterTax:afterTax,
       taxOn:taxOn,taxRate:isFinite(taxRate)?taxRate:20.315,
       rows:JSON.parse(JSON.stringify(rows))});
     setSaved(s);setLastSavedId(lastSavedId);
@@ -619,6 +630,8 @@ function revertToLastSaved(){
   askConfirm('「'+e.name+'」の保存時の状態に戻しますか？',function(){
     rows=JSON.parse(JSON.stringify(e.rows));
     document.getElementById('current-price').value=e.cur!==null?e.cur:'';
+    if(e.targetPrice!=null)document.getElementById('target-price').value=e.targetPrice;
+    if(e.priceMode){priceMode=e.priceMode;document.getElementById('radio-current').checked=(priceMode==='current');document.getElementById('radio-target').checked=(priceMode==='target');}
     document.getElementById('tax-on').checked=!!e.taxOn;
     document.getElementById('tax-rate').value=e.taxRate||20.315;
     render();showToast('「'+e.name+'」に戻しました');
@@ -651,6 +664,8 @@ function loadSaved(id){
     rows=JSON.parse(JSON.stringify(e.rows));
     lastSavedId=e.id;setLastSavedId(e.id);
     document.getElementById('current-price').value=e.cur!==null?e.cur:'';
+    if(e.targetPrice!=null)document.getElementById('target-price').value=e.targetPrice;
+    if(e.priceMode){priceMode=e.priceMode;document.getElementById('radio-current').checked=(priceMode==='current');document.getElementById('radio-target').checked=(priceMode==='target');}
     document.getElementById('tax-on').checked=!!e.taxOn;
     document.getElementById('tax-rate').value=e.taxRate||20.315;
     render();
@@ -825,6 +840,30 @@ function buildSettingsUI(){
   body.appendChild(rb);
 }
 
+/* ── セッション保存・復元 ── */
+function saveSession(){
+  try{
+    localStorage.setItem('sim_session',JSON.stringify({
+      cur:document.getElementById('current-price').value,
+      tgt:document.getElementById('target-price').value,
+      priceMode:priceMode,
+      taxOn:document.getElementById('tax-on').checked,
+      taxRate:document.getElementById('tax-rate').value
+    }));
+  }catch(e){}
+}
+function loadSession(){
+  try{
+    var s=JSON.parse(localStorage.getItem('sim_session'));
+    if(!s)return;
+    if(s.cur)document.getElementById('current-price').value=s.cur;
+    if(s.tgt)document.getElementById('target-price').value=s.tgt;
+    if(s.priceMode)priceMode=s.priceMode;
+    if(s.taxOn!=null)document.getElementById('tax-on').checked=s.taxOn;
+    if(s.taxRate)document.getElementById('tax-rate').value=s.taxRate;
+  }catch(e){}
+}
+
 /* ── Toast ── */
 function showToast(msg){
   var t=document.getElementById('toast');
@@ -843,14 +882,28 @@ if(lastSavedId){
         var _e=_s[_i];
         rows=JSON.parse(JSON.stringify(_e.rows));
         document.getElementById('current-price').value=_e.cur!==null?_e.cur:'';
+        if(_e.targetPrice!=null)document.getElementById('target-price').value=_e.targetPrice;
+        if(_e.priceMode)priceMode=_e.priceMode;
         document.getElementById('tax-on').checked=!!_e.taxOn;
         document.getElementById('tax-rate').value=_e.taxRate||cfg.defaultTaxRate;
         break;
       }
     }
   }catch(e){}
+} else {
+  // 保存パターンがない場合はセッションから復元
+  loadSession();
 }
+// ラジオボタンの状態を反映
+document.getElementById('radio-current').checked=(priceMode==='current');
+document.getElementById('radio-target').checked=(priceMode==='target');
 render();
+
+// 入力変更時にセッション自動保存
+['current-price','target-price','tax-rate'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',saveSession);
+});
+document.getElementById('tax-on').addEventListener('change',saveSession);
 </script>
 </body>
 </html>
