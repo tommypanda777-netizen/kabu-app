@@ -417,7 +417,7 @@ function recalc(){
   document.querySelectorAll('.row-pct').forEach(function(el,i){
     var p=parseFloat(rows[i]&&rows[i].price);
     if(isFinite(cur)&&cur>0&&isFinite(p)&&p>0){
-      var pct=((cur-p)/p)*100;
+      var pct=((p-cur)/cur)*100;
       el.textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%';
       el.style.color=pct>=0?cfg.colorRowPctPlus:cfg.colorRowPctMinus;
       el.style.fontSize=cfg.sizeRowPct+'px';
