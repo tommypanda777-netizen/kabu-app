@@ -314,6 +314,7 @@ var DEFAULTS={
   colorAvg:'#ffffc8',
   colorQty:'#e8e8ea',
   colorCost:'#e8e8ea',
+  colorCostWarn:'#000000',
   colorPnl:'#e8e8ea',
   colorAfterTax:'#f06060',
   colorAfterTaxMinus:'#3ecf7a',
@@ -386,7 +387,7 @@ function applyCfg(){
   // 文字色
   document.getElementById('avg').style.color=cfg.colorAvg;
   document.getElementById('tot-qty').style.color=cfg.colorQty;
-  document.getElementById('tot-cost').style.color=cfg.colorCost;
+  // 合計金額の色はrecalcで警告判定しながら適用
   document.getElementById('pnl-amt').style.color=cfg.colorPnl;
   document.getElementById('current-price').style.color=cfg.colorInput;
   document.getElementById('pnl-after-tax').style.color=
@@ -473,6 +474,9 @@ function recalc(){
   document.getElementById('avg').textContent=t.avg!==null?fmt(t.avg,0):'—';
   document.getElementById('tot-qty').textContent=t.qty>0?fmt(t.qty,0):'—';
   document.getElementById('tot-cost').textContent=t.cost>0?fmt(t.cost,0):'—';
+  var base=parseFloat(cfg.baseAsset)||0;
+  var costEl=document.getElementById('tot-cost');
+  costEl.style.color=(base>0&&t.cost>base)?cfg.colorCostWarn:cfg.colorCost;
   var cur=getActivePrice();
   var pnlAmtEl=document.getElementById('pnl-amt');
   var pnlPctEl=document.getElementById('pnl-pct');
@@ -796,6 +800,7 @@ function buildSettingsUI(){
       {key:'colorAvg',label:'平均単価',type:'color'},
       {key:'colorQty',label:'合計数量',type:'color'},
       {key:'colorCost',label:'合計金額',type:'color'},
+      {key:'colorCostWarn',label:'合計金額（警告）',type:'color'},
       {key:'colorPnl',label:'損益',type:'color'},
       {key:'colorAfterTax',label:'税引後（プラス）',type:'color'},
       {key:'colorAfterTaxMinus',label:'税引後（マイナス）',type:'color'},
