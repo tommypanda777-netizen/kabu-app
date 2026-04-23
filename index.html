@@ -44,7 +44,7 @@ header{display:none}
 .s-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text)}
 .divider{height:1px;background:var(--border);margin:var(--divider-margin,8px) 0}
 .pnl-row{display:flex;flex-direction:column;gap:3px}
-.pnl-label-row{display:flex;align-items:center;gap:6px;margin-top:var(--pnl-label-margin,0px)}
+.pnl-label-row{display:flex;align-items:center;gap:6px;margin-bottom:var(--pnl-label-margin,0px)}
 .price-inputs-labels{flex:0 0 auto;display:flex;gap:4px}
 .pnl-result-label{flex:1;text-align:right}
 .pnl-inputs-row{display:flex;align-items:center;gap:6px}
@@ -868,8 +868,8 @@ function buildSettingsUI(){
     {title:'レイアウト',items:[
       {key:'summaryTop',label:'サマリー上余白',type:'size',min:0,max:40},
       {key:'dividerMargin',label:'仕切り線余白',type:'size',min:0,max:30},
-      {key:'pnlLabelMarginV',label:'ラベル行 上余白',type:'size',min:0,max:30},
-      {key:'pnlPctMarginV',label:'損益％ 上余白',type:'size',min:0,max:30},
+      {key:'pnlLabelMarginV',label:'ラベル行 下余白',type:'size',min:0,max:30},
+      {key:'pnlPctMarginV',label:'損益％ 上余白',type:'size',min:-10,max:30},
       {key:'taxRowMarginV',label:'税引後行 上余白',type:'size',min:0,max:30},
       {key:'footerPaddingV',label:'フッター縦余白',type:'size',min:2,max:30},
     ]},
