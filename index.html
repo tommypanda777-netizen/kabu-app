@@ -40,9 +40,9 @@ header{display:none}
 .s-label{font-size:10px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em}
 .s-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text)}
 .divider{height:1px;background:var(--border);margin:8px 0}
-.pnl-row{display:flex;align-items:flex-end;gap:10px}
-.price-inputs{flex:1;display:flex;gap:6px}
-.price-input-wrap{flex:1;display:flex;flex-direction:column;gap:3px}
+.pnl-row{display:flex;align-items:flex-end;gap:6px}
+.price-inputs{flex:0 0 auto;display:flex;gap:4px}
+.price-input-wrap{width:90px;display:flex;flex-direction:column;gap:3px}
 .price-label-row{display:flex;align-items:center}
 .radio-toggle{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
 .radio-toggle input[type=radio]{display:none}
@@ -50,7 +50,7 @@ header{display:none}
 .rb-box::after{content:'';display:none;width:6px;height:6px;border-radius:50%;background:#aaa}
 .radio-toggle input[type=radio]:checked + .rb-box{border-color:#aaa}
 .radio-toggle input[type=radio]:checked + .rb-box::after{display:block}
-.price-input-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 8px;font-family:var(--mono);outline:none;-webkit-appearance:none;text-align:right}
+.price-input-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 6px;font-family:var(--mono);outline:none;-webkit-appearance:none;text-align:right}
 .pnl-result{flex:1;text-align:right}
 .pnl-result .s-label{text-align:right}
 .pnl-amount{font-family:var(--mono);font-weight:500;color:var(--text)}
@@ -232,12 +232,13 @@ header{display:none}
     <div class="rows-scroll" id="rows-scroll">
       <div class="rows-wrap" id="rows"></div>
     </div>
-    <div class="toolbar-fixed">
-      <!-- 左：歯車 -->
-      <button class="gear-btn" onclick="openSettings()">
-        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.01 7.01 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-      </button>
-      <!-- 右：保存ボタン群 -->
+    <div class="toolbar-fixed" id="toolbar-fixed">
+      <!-- 左：資産合計 -->
+      <div id="asset-total-wrap" style="display:flex;flex-direction:column;justify-content:center">
+        <div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:1px">資産合計</div>
+        <div id="asset-total" style="font-family:var(--mono);font-weight:500">—</div>
+      </div>
+      <!-- 右：保存ボタン群＋歯車 -->
       <div class="toolbar-right">
         <button class="tool-btn" onclick="overwriteSave()" title="上書き保存">
           <svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H7V5h8v4z"/></svg>
@@ -248,6 +249,9 @@ header{display:none}
         </button>
         <button class="tool-btn" onclick="revertToLastSaved()">
           <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
+        <button class="gear-btn" onclick="openSettings()">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.01 7.01 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
         </button>
       </div>
     </div>
@@ -338,8 +342,15 @@ var DEFAULTS={
   bgRow:'#1c1c1c',
   // カード上下位置（summary-fixedのpadding-top）
   summaryTop:8,
-  // 税率
-  defaultTaxRate:20.315
+  // レイアウト
+  summaryPaddingV:10,
+  footerPaddingV:6,
+  // 資産合計
+  colorAsset:'#ffffc8',
+  sizeAsset:20,
+  // 税率・原資産額
+  defaultTaxRate:20.315,
+  baseAsset:0
 };
 var cfg={};
 
@@ -362,6 +373,13 @@ function applyCfg(){
   sc.style.border='1px solid '+lighten(cfg.bgSummary,20);
   // サマリー上位置
   document.querySelector('.summary-fixed').style.paddingTop=cfg.summaryTop+'px';
+  // サマリーカード縦余白
+  document.getElementById('summary-card').style.padding=cfg.summaryPaddingV+'px 10px';
+  // フッター縦余白
+  document.getElementById('toolbar-fixed').style.padding=cfg.footerPaddingV+'px 14px '+(cfg.footerPaddingV+14)+'px';
+  // 資産合計スタイル
+  var at=document.getElementById('asset-total');
+  if(at){at.style.fontSize=cfg.sizeAsset+'px';at.style.color=cfg.colorAsset;}
   // 計算行カード（CSS変数）
   document.documentElement.style.setProperty('--surface',cfg.bgRow);
   document.documentElement.style.setProperty('--bg',cfg.bgApp);
@@ -477,6 +495,28 @@ function recalc(){
     pnlAmtEl.style.color=cfg.colorPnl;
     pnlPctEl.textContent='';
     pnlAfterEl.textContent='';
+  }
+  // 資産合計
+  var atEl=document.getElementById('asset-total');
+  if(atEl){
+    var taxOn2=document.getElementById('tax-on').checked;
+    var taxRate2=parseFloat(document.getElementById('tax-rate').value)/100;
+    var afterTaxVal=null;
+    if(t.avg!==null&&isFinite(cur)&&t.qty>0){
+      var pnl2=(cur-t.avg)*t.qty;
+      if(taxOn2&&isFinite(taxRate2)){afterTaxVal=pnl2*(1-taxRate2);}
+      else{afterTaxVal=pnl2;}
+    }
+    var base=parseFloat(cfg.baseAsset)||0;
+    if(afterTaxVal!==null){
+      atEl.textContent='¥'+fmtFull(base+afterTaxVal,0);
+    }else if(base>0){
+      atEl.textContent='¥'+fmtFull(base,0);
+    }else{
+      atEl.textContent='—';
+    }
+    atEl.style.color=cfg.colorAsset;
+    atEl.style.fontSize=cfg.sizeAsset+'px';
   }
   document.querySelectorAll('.subtotal-val').forEach(function(el,i){
     var p=parseFloat(rows[i]&&rows[i].price),q=parseFloat(rows[i]&&rows[i].qty);
@@ -767,6 +807,7 @@ function buildSettingsUI(){
       {key:'colorSubtotal',label:'計算行 小計',type:'color'},
       {key:'colorRowPctPlus',label:'計算行 ％（プラス）',type:'color'},
       {key:'colorRowPctMinus',label:'計算行 ％（マイナス）',type:'color'},
+      {key:'colorAsset',label:'資産合計',type:'color'},
     ]},
     {title:'文字サイズ',items:[
       {key:'sizeAvg',label:'平均単価',type:'size',min:12,max:40},
@@ -779,6 +820,7 @@ function buildSettingsUI(){
       {key:'sizeRowInput',label:'計算行 入力値',type:'size',min:10,max:28},
       {key:'sizeSubtotal',label:'計算行 小計',type:'size',min:8,max:24},
       {key:'sizeRowPct',label:'計算行 ％',type:'size',min:8,max:20},
+      {key:'sizeAsset',label:'資産合計',type:'size',min:12,max:36},
     ]},
     {title:'背景色',items:[
       {key:'bgApp',label:'アプリ背景',type:'color'},
@@ -787,9 +829,12 @@ function buildSettingsUI(){
     ]},
     {title:'レイアウト',items:[
       {key:'summaryTop',label:'サマリー上余白',type:'size',min:0,max:40},
+      {key:'summaryPaddingV',label:'サマリーカード縦余白',type:'size',min:4,max:30},
+      {key:'footerPaddingV',label:'フッター縦余白',type:'size',min:2,max:30},
     ]},
     {title:'デフォルト',items:[
       {key:'defaultTaxRate',label:'税率（%）',type:'number',min:0,max:100,step:0.001},
+      {key:'baseAsset',label:'原資産額',type:'number',min:0,max:999999999,step:1},
     ]},
   ];
 
@@ -820,8 +865,9 @@ function buildSettingsUI(){
         ni.type='number';ni.step=item.step||1;ni.min=item.min;ni.max=item.max;ni.value=cfg[item.key];
         ni.style.cssText='width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;text-align:right';
         ni.addEventListener('change',function(){
-          cfg[item.key]=parseFloat(ni.value)||DEFAULTS[item.key];saveCfg();
-          document.getElementById('tax-rate').value=cfg.defaultTaxRate;
+          cfg[item.key]=parseFloat(ni.value)||0;saveCfg();
+          if(item.key==='defaultTaxRate')document.getElementById('tax-rate').value=cfg.defaultTaxRate;
+          recalc();applyCfg();
         });
         ctrl.appendChild(ni);
       }
