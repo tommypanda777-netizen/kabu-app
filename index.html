@@ -190,8 +190,8 @@ header{display:none}
     <div class="summary-fixed">
       <div class="summary" id="summary-card">
         <div class="summary-grid">
-          <div class="summary-item"><div class="s-label">平均単価</div><div class="s-val" id="avg">—</div></div>
-          <div class="summary-item"><div class="s-label">合計数量</div><div class="s-val" id="tot-qty">—</div></div>
+          <div class="summary-item" id="item-avg"><div class="s-label">平均単価</div><div class="s-val" id="avg">—</div></div>
+          <div class="summary-item" id="item-qty"><div class="s-label">合計数量</div><div class="s-val" id="tot-qty">—</div></div>
           <div class="summary-item"><div class="s-label">合計金額</div><div class="s-val" id="tot-cost">—</div></div>
         </div>
         <div class="divider"></div>
@@ -363,6 +363,8 @@ var DEFAULTS={
   // カード上下位置（summary-fixedのpadding-top）
   summaryTop:8,
   // レイアウト
+  avgOffsetX:0,
+  qtyOffsetX:0,
   dividerMargin:8,
   pnlLabelMarginV:0,
   pnlPctMarginV:0,
@@ -396,6 +398,10 @@ function applyCfg(){
   sc.style.border='1px solid '+lighten(cfg.bgSummary,20);
   // サマリー上位置
   document.querySelector('.summary-fixed').style.paddingTop=cfg.summaryTop+'px';
+  var ia=document.getElementById('item-avg');
+  var iq=document.getElementById('item-qty');
+  if(ia)ia.style.transform='translateX('+cfg.avgOffsetX+'px)';
+  if(iq)iq.style.transform='translateX('+cfg.qtyOffsetX+'px)';
   // divider余白
   document.documentElement.style.setProperty('--divider-margin',cfg.dividerMargin+'px');
   document.documentElement.style.setProperty('--pnl-label-margin',cfg.pnlLabelMarginV+'px');
@@ -867,6 +873,8 @@ function buildSettingsUI(){
     ]},
     {title:'レイアウト',items:[
       {key:'summaryTop',label:'サマリー上余白',type:'size',min:0,max:40},
+      {key:'avgOffsetX',label:'平均単価 左右位置',type:'size',min:-60,max:60},
+      {key:'qtyOffsetX',label:'合計数量 左右位置',type:'size',min:-60,max:60},
       {key:'dividerMargin',label:'仕切り線余白',type:'size',min:0,max:30},
       {key:'pnlLabelMarginV',label:'ラベル行 下余白',type:'size',min:-10,max:30},
       {key:'pnlPctMarginV',label:'損益％ 上余白',type:'size',min:-10,max:30},
