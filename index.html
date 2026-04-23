@@ -178,6 +178,15 @@ header{display:none}
 /* Toast */
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);border:1px solid var(--border2);padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1}
+
+/* ノート */
+.note-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px}
+#note-editor{min-height:100%;outline:none;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:16px;color:#e8e8ea;line-height:1.7;word-break:break-word;white-space:pre-wrap;-webkit-user-modify:read-write-plaintext-only}
+#note-editor:empty::before{content:'メモを入力...';color:var(--text3);pointer-events:none}
+.note-toolbar{flex-shrink:0;background:var(--bg);padding:6px 14px 20px;display:flex;justify-content:flex-end;align-items:center}
+.note-toolbar-right{display:flex;align-items:center;gap:6px}
+.note-fmt-btn{width:30px;height:30px;border-radius:7px;background:var(--surface);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.note-fmt-btn:active,.note-fmt-btn.active{background:var(--text2);color:var(--bg)}
 </style>
 </head>
 <body>
@@ -185,6 +194,7 @@ header{display:none}
 <div class="tab-bar">
   <button class="tab active" onclick="showTab('calc',this)">計算</button>
   <button class="tab" onclick="showTab('saved',this)">保存</button>
+  <button class="tab" onclick="showTab('note',this)">ノート</button>
 </div>
 
 <div class="pages">
@@ -283,6 +293,42 @@ header{display:none}
         <button class="saved-clear" onclick="clearSaved()">全削除</button>
       </div>
       <div id="saved-list"></div>
+    </div>
+  </div>
+
+  <!-- ノートページ -->
+  <div class="page" id="page-note">
+    <div class="note-scroll" id="note-scroll">
+      <div
+        id="note-editor"
+        contenteditable="true"
+        spellcheck="false"
+        oninput="saveNote()"
+      ></div>
+    </div>
+    <div class="note-toolbar" id="note-toolbar">
+      <div class="note-toolbar-right">
+        <!-- フォントサイズ -->
+        <input type="number" id="note-size-input" value="16" min="8" max="72"
+          oninput="applyNoteSize(this.value)"
+          style="width:44px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:4px 6px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;text-align:center">
+        <!-- 文字色 -->
+        <input type="color" id="note-color-picker" value="#e8e8ea"
+          oninput="applyNoteColor(this.value)"
+          class="cfg-color" style="width:28px;height:28px">
+        <!-- 太字 -->
+        <button class="note-fmt-btn" id="btn-bold" onclick="noteFormat('bold')" title="太字">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
+        </button>
+        <!-- 斜体 -->
+        <button class="note-fmt-btn" id="btn-italic" onclick="noteFormat('italic')" title="斜体">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
+        </button>
+        <!-- 下線 -->
+        <button class="note-fmt-btn" id="btn-underline" onclick="noteFormat('underline')" title="下線">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -676,7 +722,86 @@ function showTab(tab,el){
   el.classList.add('active');
   document.getElementById('page-'+tab).classList.add('active');
   if(tab==='saved')renderSaved();
+  if(tab==='note')initNote();
 }
+
+/* ── ノート ── */
+var noteState={size:16,color:'#e8e8ea'};
+
+function initNote(){
+  try{
+    var s=JSON.parse(localStorage.getItem('kabu_note_state')||'{}');
+    if(s.size)noteState.size=s.size;
+    if(s.color)noteState.color=s.color;
+  }catch(e){}
+  var ed=document.getElementById('note-editor');
+  var saved=localStorage.getItem('kabu_note')||'';
+  if(ed&&!ed.dataset.loaded){ed.innerHTML=saved;ed.dataset.loaded='1';}
+  document.getElementById('note-size-input').value=noteState.size;
+  document.getElementById('note-color-picker').value=noteState.color;
+  ed.style.fontSize=noteState.size+'px';
+  ed.style.color=noteState.color;
+  updateFmtBtns();
+}
+
+function saveNote(){
+  var ed=document.getElementById('note-editor');
+  if(ed)try{localStorage.setItem('kabu_note',ed.innerHTML);}catch(e){}
+}
+
+function saveNoteState(){
+  try{localStorage.setItem('kabu_note_state',JSON.stringify(noteState));}catch(e){}
+}
+
+function applyNoteSize(v){
+  var n=parseInt(v)||16;
+  noteState.size=n;
+  saveNoteState();
+  var ed=document.getElementById('note-editor');
+  var sel=window.getSelection();
+  // 選択範囲がエディタ内にあればその部分だけに適用
+  if(sel&&sel.rangeCount>0&&!sel.isCollapsed){
+    var range=sel.getRangeAt(0);
+    var span=document.createElement('span');
+    span.style.fontSize=n+'px';
+    try{
+      range.surroundContents(span);
+      saveNote();
+      return;
+    }catch(e){/* 複数ノードにまたがる場合はfallthrough */}
+  }
+  // 選択なし→エディタ全体に適用
+  ed.style.fontSize=n+'px';
+  saveNote();
+}
+
+function applyNoteColor(v){
+  noteState.color=v;
+  document.getElementById('note-editor').style.color=v;
+  saveNoteState();
+  // 選択中テキストにも適用
+  document.execCommand('foreColor',false,v);
+}
+
+function noteFormat(cmd){
+  document.getElementById('note-editor').focus();
+  document.execCommand(cmd,false,null);
+  saveNote();
+  updateFmtBtns();
+}
+
+function updateFmtBtns(){
+  ['bold','italic','underline'].forEach(function(cmd){
+    var btn=document.getElementById('btn-'+cmd);
+    if(btn)btn.classList.toggle('active',document.queryCommandState(cmd));
+  });
+}
+
+document.addEventListener('selectionchange',function(){
+  if(document.getElementById('page-note')&&document.getElementById('page-note').classList.contains('active')){
+    updateFmtBtns();
+  }
+});
 
 /* ── 確認ダイアログ ── */
 var _confirmCb=null;
