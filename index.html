@@ -180,13 +180,13 @@ header{display:none}
 .toast.show{opacity:1}
 
 /* ノート */
-.note-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px}
-#note-editor{min-height:100%;outline:none;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:16px;color:#e8e8ea;line-height:1.7;word-break:break-word;white-space:pre-wrap;-webkit-user-modify:read-write-plaintext-only}
-#note-editor:empty::before{content:'メモを入力...';color:var(--text3);pointer-events:none}
-.note-toolbar{flex-shrink:0;background:var(--bg);padding:6px 14px 20px;display:flex;justify-content:flex-end;align-items:center}
-.note-toolbar-right{display:flex;align-items:center;gap:6px}
-.note-fmt-btn{width:30px;height:30px;border-radius:7px;background:var(--surface);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.note-fmt-btn:active,.note-fmt-btn.active{background:var(--text2);color:var(--bg)}
+/* ノート */
+.note-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 10px 4px}
+.note-grid{display:flex;flex-direction:column;gap:8px}
+.note-card{border-radius:10px;overflow:hidden}
+.note-card-editor{outline:none;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;line-height:1.7;padding:10px 12px;word-break:break-word;-webkit-user-modify:read-write-plaintext-only;width:100%;display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box}
+.note-card-editor:empty::before{content:'メモ...';opacity:.35;pointer-events:none}
+.note-footer{flex-shrink:0;background:var(--bg);padding:6px 14px 20px;display:flex;justify-content:flex-end;align-items:center}
 </style>
 </head>
 <body>
@@ -299,24 +299,12 @@ header{display:none}
   <!-- ノートページ -->
   <div class="page" id="page-note">
     <div class="note-scroll" id="note-scroll">
-      <div
-        id="note-editor"
-        contenteditable="true"
-        spellcheck="false"
-        oninput="saveNote()"
-      ></div>
+      <div class="note-grid" id="note-grid"></div>
     </div>
-    <div class="note-toolbar" id="note-toolbar">
-      <div class="note-toolbar-right">
-        <!-- フォントサイズ -->
-        <input type="number" id="note-size-input" value="16" min="8" max="72"
-          oninput="applyNoteSize(this.value)"
-          style="width:44px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:4px 6px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;text-align:center">
-        <!-- 文字色 -->
-        <input type="color" id="note-color-picker" value="#e8e8ea"
-          oninput="applyNoteColor(this.value)"
-          class="cfg-color" style="width:28px;height:28px">
-      </div>
+    <div class="note-footer">
+      <button class="gear-btn" onclick="openNoteSettings()">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.01 7.01 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      </button>
     </div>
   </div>
 </div>
@@ -342,6 +330,16 @@ header{display:none}
       <button class="save-box-cancel" onclick="closeSaveDialog()">キャンセル</button>
     </div>
   </div>
+</div>
+
+<!-- ノート設定パネル -->
+<div class="settings-overlay" id="note-settings-overlay" onclick="closeNoteSettings()"></div>
+<div class="settings-panel" id="note-settings-panel">
+  <div class="settings-header">
+    <h2>ノート設定</h2>
+    <button class="settings-close" onclick="closeNoteSettings()">×</button>
+  </div>
+  <div class="settings-body" id="note-settings-body"></div>
 </div>
 
 <!-- 設定パネル -->
@@ -714,59 +712,174 @@ function showTab(tab,el){
 }
 
 /* ── ノート ── */
-var noteState={size:16,color:'#e8e8ea'};
+/* ── 付箋ノート ── */
+var noteCards=[];
+
+function getNoteCards(){try{return JSON.parse(localStorage.getItem('kabu_cards')||'[]');}catch(e){return[];}}
+function setNoteCards(c){try{localStorage.setItem('kabu_cards',JSON.stringify(c));}catch(e){}}
 
 function initNote(){
-  try{
-    var s=JSON.parse(localStorage.getItem('kabu_note_state')||'{}');
-    if(s.size)noteState.size=s.size;
-    if(s.color)noteState.color=s.color;
-  }catch(e){}
-  var ed=document.getElementById('note-editor');
-  var saved=localStorage.getItem('kabu_note')||'';
-  if(ed&&!ed.dataset.loaded){ed.innerHTML=saved;ed.dataset.loaded='1';}
-  document.getElementById('note-size-input').value=noteState.size;
-  document.getElementById('note-color-picker').value=noteState.color;
-  ed.style.fontSize=noteState.size+'px';
-  ed.style.color=noteState.color;
-  updateFmtBtns();
-}
-
-function saveNote(){
-  var ed=document.getElementById('note-editor');
-  if(ed)try{localStorage.setItem('kabu_note',ed.innerHTML);}catch(e){}
-}
-
-function saveNoteState(){
-  try{localStorage.setItem('kabu_note_state',JSON.stringify(noteState));}catch(e){}
-}
-
-function applyNoteSize(v){
-  var n=parseInt(v)||16;
-  noteState.size=n;
-  saveNoteState();
-  var ed=document.getElementById('note-editor');
-  var sel=window.getSelection();
-  // 選択範囲がエディタ内にあればその部分だけに適用
-  if(sel&&sel.rangeCount>0&&!sel.isCollapsed){
-    var range=sel.getRangeAt(0);
-    var span=document.createElement('span');
-    span.style.fontSize=n+'px';
-    try{
-      range.surroundContents(span);
-      saveNote();
-      return;
-    }catch(e){/* 複数ノードにまたがる場合はfallthrough */}
+  noteCards=getNoteCards();
+  if(noteCards.length===0){
+    noteCards=[
+      {id:'n1',text:'',color:'#e8e8ea',bg:'#2a2a2a',size:16,height:160,lineHeight:1.7},
+      {id:'n2',text:'',color:'#e8e8ea',bg:'#2a2a2a',size:16,height:160,lineHeight:1.7}
+    ];
+    setNoteCards(noteCards);
   }
-  // 選択なし→エディタ全体に適用
-  ed.style.fontSize=n+'px';
-  saveNote();
+  renderCards();
 }
 
-function applyNoteColor(v){
-  noteState.color=v;
-  document.getElementById('note-editor').style.color=v;
-  saveNoteState();
+function renderCards(){
+  var grid=document.getElementById('note-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  noteCards.forEach(function(card,i){
+    var div=document.createElement('div');
+    div.className='note-card';
+    div.style.background=card.bg;
+    div.style.height=(card.height||160)+'px';
+    var editor=document.createElement('div');
+    editor.className='note-card-editor';
+    editor.contentEditable='true';
+    editor.spellcheck=false;
+    editor.style.fontSize=(card.size||16)+'px';
+    editor.style.color=card.color||'#e8e8ea';
+    editor.style.lineHeight=(card.lineHeight||1.7);
+    editor.style.height='100%';
+    editor.style.boxSizing='border-box';
+    editor.innerHTML=card.text||'';
+    editor.addEventListener('input',function(){
+      noteCards[i].text=editor.innerHTML;
+      setNoteCards(noteCards);
+    });
+    div.appendChild(editor);
+    grid.appendChild(div);
+  });
+}
+
+function openNoteSettings(){
+  buildNoteSettingsUI();
+  document.getElementById('note-settings-overlay').classList.add('open');
+  document.getElementById('note-settings-panel').classList.add('open');
+}
+function closeNoteSettings(){
+  document.getElementById('note-settings-overlay').classList.remove('open');
+  document.getElementById('note-settings-panel').classList.remove('open');
+}
+
+function buildNoteSettingsUI(){
+  var body=document.getElementById('note-settings-body');
+  body.innerHTML='';
+
+  // メモ数
+  var countSec=document.createElement('div');countSec.className='cfg-section';
+  var countTitle=document.createElement('div');countTitle.className='cfg-section-title';countTitle.textContent='メモ数';
+  countSec.appendChild(countTitle);
+  var countRow=document.createElement('div');countRow.className='cfg-row';
+  var countLbl=document.createElement('span');countLbl.className='cfg-label';countLbl.textContent='付箋の枚数';
+  var countInp=document.createElement('input');
+  countInp.type='number';countInp.min=1;countInp.max=10;countInp.value=noteCards.length;
+  countInp.style.cssText='width:60px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;text-align:right';
+  countInp.addEventListener('change',function(){
+    var n=Math.max(1,Math.min(10,parseInt(countInp.value)||1));
+    countInp.value=n;
+    // 増やす
+    while(noteCards.length<n){
+      noteCards.push({id:'n'+Date.now()+'_'+noteCards.length,text:'',color:'#e8e8ea',bg:'#2a2a2a',size:16,height:160});
+    }
+    // 減らす
+    if(noteCards.length>n)noteCards=noteCards.slice(0,n);
+    setNoteCards(noteCards);
+    renderCards();
+    buildNoteSettingsUI();
+  });
+  countRow.appendChild(countLbl);countRow.appendChild(countInp);
+  countSec.appendChild(countRow);body.appendChild(countSec);
+
+  // 各メモの設定
+  noteCards.forEach(function(card,i){
+    var sec=document.createElement('div');sec.className='cfg-section';
+    var title=document.createElement('div');title.className='cfg-section-title';title.textContent='メモ'+(i+1);
+    sec.appendChild(title);
+
+    // 文字サイズ
+    var rowSize=document.createElement('div');rowSize.className='cfg-row';
+    var lblSize=document.createElement('span');lblSize.className='cfg-label';lblSize.textContent='文字サイズ';
+    var wrap=document.createElement('div');wrap.className='cfg-size';
+    var sl=document.createElement('input');sl.type='range';sl.min=8;sl.max=40;sl.value=card.size||16;
+    var vl=document.createElement('span');vl.className='cfg-size-val';vl.textContent=sl.value;
+    sl.addEventListener('input',function(){
+      var n=parseInt(sl.value);
+      vl.textContent=n;
+      noteCards[i].size=n;
+      setNoteCards(noteCards);
+      var editors=document.querySelectorAll('.note-card-editor');
+      if(editors[i])editors[i].style.fontSize=n+'px';
+    });
+    wrap.appendChild(sl);wrap.appendChild(vl);
+    rowSize.appendChild(lblSize);rowSize.appendChild(wrap);sec.appendChild(rowSize);
+
+    // 文字色
+    var rowColor=document.createElement('div');rowColor.className='cfg-row';
+    var lblColor=document.createElement('span');lblColor.className='cfg-label';lblColor.textContent='文字色';
+    var cp=document.createElement('input');cp.type='color';cp.className='cfg-color';cp.value=card.color||'#e8e8ea';
+    cp.addEventListener('input',function(){
+      noteCards[i].color=cp.value;
+      setNoteCards(noteCards);
+      var editors=document.querySelectorAll('.note-card-editor');
+      if(editors[i])editors[i].style.color=cp.value;
+    });
+    rowColor.appendChild(lblColor);rowColor.appendChild(cp);sec.appendChild(rowColor);
+
+    // 背景色
+    var rowBg=document.createElement('div');rowBg.className='cfg-row';
+    var lblBg=document.createElement('span');lblBg.className='cfg-label';lblBg.textContent='背景色';
+    var bp=document.createElement('input');bp.type='color';bp.className='cfg-color';bp.value=card.bg||'#2a2a2a';
+    bp.addEventListener('input',function(){
+      noteCards[i].bg=bp.value;
+      setNoteCards(noteCards);
+      var cards=document.querySelectorAll('.note-card');
+      if(cards[i])cards[i].style.background=bp.value;
+    });
+    rowBg.appendChild(lblBg);rowBg.appendChild(bp);sec.appendChild(rowBg);
+
+    // 縦サイズ
+    var rowH=document.createElement('div');rowH.className='cfg-row';
+    var lblH=document.createElement('span');lblH.className='cfg-label';lblH.textContent='縦サイズ';
+    var wrapH=document.createElement('div');wrapH.className='cfg-size';
+    var slH=document.createElement('input');slH.type='range';slH.min=60;slH.max=500;slH.value=card.height||160;
+    var vlH=document.createElement('span');vlH.className='cfg-size-val';vlH.textContent=slH.value;
+    slH.addEventListener('input',function(){
+      var n=parseInt(slH.value);
+      vlH.textContent=n;
+      noteCards[i].height=n;
+      setNoteCards(noteCards);
+      var cards=document.querySelectorAll('.note-card');
+      if(cards[i])cards[i].style.height=n+'px';
+    });
+    wrapH.appendChild(slH);wrapH.appendChild(vlH);
+    rowH.appendChild(lblH);rowH.appendChild(wrapH);sec.appendChild(rowH);
+
+    // 行間
+    var rowLH=document.createElement('div');rowLH.className='cfg-row';
+    var lblLH=document.createElement('span');lblLH.className='cfg-label';lblLH.textContent='行間';
+    var wrapLH=document.createElement('div');wrapLH.className='cfg-size';
+    var slLH=document.createElement('input');slLH.type='range';slLH.min=10;slLH.max=30;slLH.step=1;slLH.value=Math.round((card.lineHeight||1.7)*10);
+    var vlLH=document.createElement('span');vlLH.className='cfg-size-val';vlLH.textContent=(slLH.value/10).toFixed(1);
+    slLH.addEventListener('input',function(){
+      var v=parseInt(slLH.value)/10;
+      vlLH.textContent=v.toFixed(1);
+      noteCards[i].lineHeight=v;
+      setNoteCards(noteCards);
+      var editors=document.querySelectorAll('.note-card-editor');
+      if(editors[i])editors[i].style.lineHeight=v;
+    });
+    wrapLH.appendChild(slLH);wrapLH.appendChild(vlLH);
+    rowLH.appendChild(lblLH);rowLH.appendChild(wrapLH);sec.appendChild(rowLH);
+
+    body.appendChild(sec);
+  });
 }
 
 /* ── 確認ダイアログ ── */
