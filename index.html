@@ -39,7 +39,7 @@ header{display:none}
 .summary-item{text-align:center}
 .s-label{font-size:10px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em}
 .s-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text)}
-.divider{height:1px;background:var(--border);margin:8px 0}
+.divider{height:1px;background:var(--border);margin:var(--divider-margin,8px) 0}
 .pnl-row{display:flex;align-items:flex-end;gap:6px}
 .price-inputs{flex:0 0 auto;display:flex;gap:4px}
 .price-input-wrap{width:90px;display:flex;flex-direction:column;gap:3px}
@@ -85,11 +85,11 @@ header{display:none}
 
 /* ツールバー */
 .toolbar-fixed{flex-shrink:0;background:var(--bg);padding:6px 14px 20px;display:flex;justify-content:space-between;align-items:center}
-.toolbar-right{display:flex;gap:6px}
-.tool-btn{width:38px;height:38px;border-radius:8px;background:var(--surface);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.toolbar-right{display:flex;gap:6px;align-items:center}
+.tool-btn{width:30px;height:30px;border-radius:7px;background:var(--surface);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
 .tool-btn:active{background:var(--surface2);color:var(--text)}
 .tool-btn svg{width:18px;height:18px;fill:currentColor}
-.gear-btn{width:38px;height:38px;border-radius:8px;background:var(--surface);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.gear-btn{width:30px;height:30px;border-radius:7px;background:var(--surface);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .gear-btn:active{background:var(--surface2);color:var(--text)}
 .gear-btn svg{width:18px;height:18px;fill:currentColor}
 
@@ -233,10 +233,10 @@ header{display:none}
       <div class="rows-wrap" id="rows"></div>
     </div>
     <div class="toolbar-fixed" id="toolbar-fixed">
-      <!-- 左：資産合計 -->
-      <div id="asset-total-wrap" style="display:flex;flex-direction:column;justify-content:center">
-        <div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:1px">資産合計</div>
-        <div id="asset-total" style="font-family:var(--mono);font-weight:500">—</div>
+      <!-- 左：資産合計（ラベルは絶対配置で数字の上に乗せる） -->
+      <div style="position:relative;display:flex;align-items:center">
+        <div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;position:absolute;top:-14px;left:0;white-space:nowrap">資産合計</div>
+        <div id="asset-total" style="font-family:var(--mono);font-weight:500;line-height:1">—</div>
       </div>
       <!-- 右：保存ボタン群＋歯車 -->
       <div class="toolbar-right">
@@ -343,7 +343,7 @@ var DEFAULTS={
   // カード上下位置（summary-fixedのpadding-top）
   summaryTop:8,
   // レイアウト
-  summaryPaddingV:10,
+  dividerMargin:8,
   footerPaddingV:6,
   // 資産合計
   colorAsset:'#ffffc8',
@@ -373,8 +373,8 @@ function applyCfg(){
   sc.style.border='1px solid '+lighten(cfg.bgSummary,20);
   // サマリー上位置
   document.querySelector('.summary-fixed').style.paddingTop=cfg.summaryTop+'px';
-  // サマリーカード縦余白
-  document.getElementById('summary-card').style.padding=cfg.summaryPaddingV+'px 10px';
+  // divider余白
+  document.documentElement.style.setProperty('--divider-margin',cfg.dividerMargin+'px');
   // フッター縦余白
   document.getElementById('toolbar-fixed').style.padding=cfg.footerPaddingV+'px 14px '+(cfg.footerPaddingV+14)+'px';
   // 資産合計スタイル
@@ -829,7 +829,7 @@ function buildSettingsUI(){
     ]},
     {title:'レイアウト',items:[
       {key:'summaryTop',label:'サマリー上余白',type:'size',min:0,max:40},
-      {key:'summaryPaddingV',label:'サマリーカード縦余白',type:'size',min:4,max:30},
+      {key:'dividerMargin',label:'サマリー仕切り線余白',type:'size',min:0,max:30},
       {key:'footerPaddingV',label:'フッター縦余白',type:'size',min:2,max:30},
     ]},
     {title:'デフォルト',items:[
