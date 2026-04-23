@@ -84,9 +84,12 @@ header{display:none}
 .field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:5px 6px;font-family:var(--mono);color:var(--text);outline:none;-webkit-appearance:none;text-align:right}
 .field input::placeholder{color:var(--text3)}
 .subtotal-val{font-family:var(--mono);color:var(--text3);flex:1;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row-actions{display:flex;gap:3px;flex-shrink:0;width:72px;justify-content:flex-end}
+.row-actions{display:flex;gap:3px;flex-shrink:0;align-items:center}
 .icon-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-size:12px;width:22px;height:24px;padding:0;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
 .icon-btn.del:active{color:var(--red);border-color:var(--red)}
+.row-drag-handle{color:var(--text3);font-size:16px;cursor:grab;width:22px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;user-select:none;-webkit-user-select:none;touch-action:none}
+.row-item.row-dragging{opacity:.4}
+.row-item.row-drag-over{box-shadow:0 0 0 2px var(--text2)}
 .insert-btn-wrap{display:flex;justify-content:center;margin-bottom:2px;margin-top:-1px}
 .insert-btn{background:none;border:none;color:var(--text3);font-size:12px;padding:0 12px;cursor:pointer;font-family:var(--mono);line-height:1.2}
 
@@ -585,8 +588,6 @@ function render(){
     d.className='row-item';
     d.style.background=cfg.bgRow;
     d.style.border='1px solid '+lighten(cfg.bgRow,18);
-    var up=i>0?'<button class="icon-btn" onclick="moveRow('+i+',-1)">↑</button>':'<span style="width:22px;flex-shrink:0"></span>';
-    var dn=i<rows.length-1?'<button class="icon-btn" onclick="moveRow('+i+',1)">↓</button>':'<span style="width:22px;flex-shrink:0"></span>';
     var dl=rows.length>1?'<button class="icon-btn del" onclick="deleteRow('+i+')">×</button>':'<span style="width:22px;flex-shrink:0"></span>';
     d.innerHTML='<span class="row-num">'+(i+1)+'</span>'
       +'<div class="row-inputs">'
@@ -597,12 +598,62 @@ function render(){
         +'<span class="subtotal-val" style="font-size:'+cfg.sizeSubtotal+'px;color:'+cfg.colorSubtotal+'">—</span>'
         +'<span class="row-pct" style="font-size:'+cfg.sizeRowPct+'px;margin-top:1px"></span>'
       +'</div>'
-      +'<div class="row-actions">'+up+dn+dl+'</div>';
+      +'<div class="row-actions">'+dl+'<span class="row-drag-handle">⠿</span></div>';
     c.appendChild(d);
     c.appendChild(makeInsertBtn(i+1));
   });
+  initRowDrag();
   applyCfg();
   recalc();
+}
+
+function initRowDrag(){
+  var list=document.getElementById('rows');
+  var dragging=null;
+  function getRowItem(el){return el?el.closest('.row-item'):null;}
+  function getRowIndex(el){
+    var items=Array.from(list.querySelectorAll('.row-item'));
+    return items.indexOf(el);
+  }
+  list.querySelectorAll('.row-drag-handle').forEach(function(handle){
+    // マウス
+    handle.addEventListener('mousedown',function(e){
+      dragging=getRowItem(handle);
+      if(dragging)dragging.classList.add('row-dragging');
+    });
+    // タッチ
+    handle.addEventListener('touchstart',function(e){
+      dragging=getRowItem(handle);
+      if(dragging){dragging.classList.add('row-dragging');e.preventDefault();}
+    },{passive:false});
+  });
+  function onMove(x,y){
+    if(!dragging)return;
+    list.querySelectorAll('.row-item').forEach(function(c){c.classList.remove('row-drag-over');});
+    var el=document.elementFromPoint(x,y);
+    var ov=getRowItem(el);
+    if(ov&&ov!==dragging)ov.classList.add('row-drag-over');
+  }
+  function onEnd(x,y){
+    if(!dragging)return;
+    var el=document.elementFromPoint(x,y);
+    var ov=getRowItem(el);
+    if(ov&&ov!==dragging){
+      var from=getRowIndex(dragging);
+      var to=getRowIndex(ov);
+      if(from>=0&&to>=0&&from!==to){
+        var tmp=rows.splice(from,1)[0];
+        rows.splice(to,0,tmp);
+        render();return;
+      }
+    }
+    list.querySelectorAll('.row-item').forEach(function(c){c.classList.remove('row-dragging','row-drag-over');});
+    dragging=null;
+  }
+  list.addEventListener('mousemove',function(e){onMove(e.clientX,e.clientY);});
+  list.addEventListener('mouseup',function(e){onEnd(e.clientX,e.clientY);});
+  list.addEventListener('touchmove',function(e){if(dragging){e.preventDefault();onMove(e.touches[0].clientX,e.touches[0].clientY);}},{passive:false});
+  list.addEventListener('touchend',function(e){if(dragging){onEnd(e.changedTouches[0].clientX,e.changedTouches[0].clientY);}});
 }
 
 function makeInsertBtn(idx){
