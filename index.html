@@ -42,7 +42,7 @@ header{display:none}
 .summary-item{text-align:center}
 .s-label{font-size:10px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em}
 .s-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text)}
-.divider{height:1px;background:var(--border);margin:var(--divider-margin,8px) 0}
+.divider{height:1px;background:var(--divider-color,var(--border));margin-top:var(--divider-margin-top,8px);margin-bottom:var(--divider-margin-bottom,8px)}
 .pnl-row{display:flex;flex-direction:column;gap:3px}
 .pnl-label-row{display:flex;align-items:center;gap:6px;margin-bottom:var(--pnl-label-margin,0px)}
 .price-inputs-labels{flex:0 0 auto;display:flex;gap:4px}
@@ -203,9 +203,9 @@ header{display:none}
     <div class="summary-fixed">
       <div class="summary" id="summary-card">
         <div class="summary-grid">
-          <div class="summary-item" id="item-avg"><div class="s-label">平均単価</div><div class="s-val" id="avg">—</div></div>
-          <div class="summary-item" id="item-qty"><div class="s-label">合計数量</div><div class="s-val" id="tot-qty">—</div></div>
-          <div class="summary-item"><div class="s-label">合計金額</div><div class="s-val" id="tot-cost">—</div></div>
+          <div class="summary-item" id="item-avg" style="transform:translateY(var(--avg-offset-y,-5px)) translateX(var(--avg-offset-x,0px))"><div class="s-label">平均単価</div><div class="s-val" id="avg">—</div></div>
+          <div class="summary-item" id="item-qty" style="transform:translateY(var(--qty-offset-y,-5px)) translateX(var(--qty-offset-x,0px))"><div class="s-label">合計数量</div><div class="s-val" id="tot-qty">—</div></div>
+          <div class="summary-item" id="item-cost" style="transform:translateY(var(--cost-offset-y,-5px));text-align:right"><div class="s-label" id="cost-label">合計金額</div><div class="s-val" id="tot-cost">—</div><div class="s-label" id="margin-label" style="margin-top:var(--margin-label-gap,5px);transform:translateY(var(--margin-label-offset-y,0px))">余力</div><div class="s-val" id="margin-val" style="display:block;transform:translateY(var(--margin-offset-y,0px))">—</div></div>
         </div>
         <div class="divider"></div>
         <div class="pnl-row">
@@ -251,9 +251,11 @@ header{display:none}
           </div>
         </div>
         <div class="tax-row">
-          <label class="tax-toggle"><input type="checkbox" id="tax-on" onchange="recalc()"><span class="cb-box"></span> 税引後</label>
+          <label class="tax-toggle" style="transform:translateY(var(--after-tax-offset-y,0px))"><input type="checkbox" id="tax-on" onchange="recalc()"><span class="cb-box"></span> 税引後</label>
           <input type="number" id="tax-rate" style="display:none" value="20.315">
-          <span class="tax-after" id="pnl-after-tax" style="margin-left:auto"></span>
+          <span id="pnl-after-tax-wrap" style="margin-left:auto;display:inline-flex;align-items:center;transform:translateY(var(--after-tax-offset-y,0px))">
+            <span class="tax-after" id="pnl-after-tax"></span>
+          </span>
         </div>
       </div>
     </div>
@@ -261,26 +263,26 @@ header{display:none}
       <div class="rows-wrap" id="rows"></div>
     </div>
     <div class="toolbar-fixed" id="toolbar-fixed">
-      <!-- 左：資産合計（ラベルは絶対配置で数字の上に乗せる） -->
-      <div style="position:relative;display:flex;align-items:center">
-        <div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;position:absolute;top:-14px;left:0;white-space:nowrap">資産合計</div>
-        <div id="asset-total" style="font-family:var(--mono);font-weight:500;line-height:1">—</div>
-      </div>
-      <!-- 右：保存ボタン群＋歯車 -->
+      <!-- 左：ボタン群 -->
       <div class="toolbar-right">
-        <button class="tool-btn" onclick="overwriteSave()" title="上書き保存">
-          <svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H7V5h8v4z"/></svg>
+        <button class="gear-btn" onclick="openSettings()">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.01 7.01 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+        <button class="tool-btn" onclick="revertToLastSaved()">
+          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
         </button>
         <button class="tool-btn" onclick="promptSave()" title="新規保存">
           <svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H7V5h8v4z"/></svg>
           <span style="position:absolute;top:3px;right:3px;font-size:9px;font-weight:700;line-height:1;color:var(--text)">＋</span>
         </button>
-        <button class="tool-btn" onclick="revertToLastSaved()">
-          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        <button class="tool-btn" onclick="overwriteSave()" title="上書き保存">
+          <svg viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H7V5h8v4z"/></svg>
         </button>
-        <button class="gear-btn" onclick="openSettings()">
-          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.01 7.01 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-        </button>
+      </div>
+      <!-- 右：資産合計（ラベルは絶対配置で数字の上に乗せる） -->
+      <div style="position:relative;display:flex;align-items:center;justify-content:flex-end">
+        <div id="asset-label" style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;position:absolute;top:var(--asset-label-top,-19px);right:0;white-space:nowrap">資産合計</div>
+        <div id="asset-total" style="font-family:var(--mono);font-weight:500;line-height:1;text-align:right">—</div>
       </div>
     </div>
   </div>
@@ -401,13 +403,35 @@ var DEFAULTS={
   avgOffsetX:0,
   qtyOffsetX:0,
   dividerMargin:8,
+  dividerMarginTop:8,
+  dividerMarginBottom:8,
+  colorDivider:'#333338',
   pnlLabelMarginV:0,
   pnlPctMarginV:0,
   taxRowMarginV:8,
+  afterTaxOffsetY:0,
+  marginOffsetY:0,
   footerPaddingV:6,
   // 資産合計
   colorAsset:'#ffffc8',
+  colorAssetLabel:'#8e8e96',
   sizeAsset:20,
+  sizeAssetLabel:10,
+  assetLabelTop:-19,
+  // 余力
+  colorMargin:'#e8e8ea',
+  colorMarginLabel:'#8e8e96',
+  sizeMargin:16,
+  sizeMarginLabel:10,
+  marginLabelGap:5,
+  marginLabelOffsetY:0,
+  // MAX株数
+  colorMax:'#444455',
+  sizeMax:10,
+  // サマリー上下位置
+  avgOffsetY:-5,
+  qtyOffsetY:-5,
+  costOffsetY:-5,
   // 税率・原資産額
   defaultTaxRate:20.315,
   baseAsset:0
@@ -433,15 +457,33 @@ function applyCfg(){
   sc.style.border='1px solid '+lighten(cfg.bgSummary,20);
   // サマリー上位置
   document.querySelector('.summary-fixed').style.paddingTop=cfg.summaryTop+'px';
+  document.documentElement.style.setProperty('--cost-offset-y',(cfg.costOffsetY||0)+'px');
   var ia=document.getElementById('item-avg');
   var iq=document.getElementById('item-qty');
-  if(ia)ia.style.transform='translateX('+cfg.avgOffsetX+'px)';
-  if(iq)iq.style.transform='translateX('+cfg.qtyOffsetX+'px)';
+  var ic=document.getElementById('item-cost');
+  if(ia)ia.style.transform='translateY('+(cfg.avgOffsetY||0)+'px) translateX('+(cfg.avgOffsetX||0)+'px)';
+  if(iq)iq.style.transform='translateY('+(cfg.qtyOffsetY||0)+'px) translateX('+(cfg.qtyOffsetX||0)+'px)';
+  if(ic)ic.style.transform='translateY('+(cfg.costOffsetY||0)+'px)';
+  // 余力ラベルとMAX
+  document.documentElement.style.setProperty('--margin-label-gap',(cfg.marginLabelGap||5)+'px');
+  document.documentElement.style.setProperty('--margin-label-offset-y',(cfg.marginLabelOffsetY||0)+'px');
+  var ml=document.getElementById('margin-label');
+  if(ml){ml.style.color=cfg.colorMarginLabel;ml.style.fontSize=(cfg.sizeMarginLabel||10)+'px';}
+  var mv=document.getElementById('margin-val');
+  if(mv){mv.style.color=cfg.colorMargin;mv.style.fontSize=(cfg.sizeMargin||16)+'px';}
+  // 資産合計ラベル
+  var al=document.getElementById('asset-label');
+  if(al){al.style.color=cfg.colorAssetLabel||'#8e8e96';al.style.fontSize=(cfg.sizeAssetLabel||10)+'px';}
+  document.documentElement.style.setProperty('--asset-label-top',(cfg.assetLabelTop||-19)+'px');
   // divider余白
-  document.documentElement.style.setProperty('--divider-margin',cfg.dividerMargin+'px');
+  document.documentElement.style.setProperty('--divider-margin-top',(cfg.dividerMarginTop||0)+'px');
+  document.documentElement.style.setProperty('--divider-margin-bottom',(cfg.dividerMarginBottom||0)+'px');
+  document.documentElement.style.setProperty('--divider-color',cfg.colorDivider||'#333338');
   document.documentElement.style.setProperty('--pnl-label-margin',cfg.pnlLabelMarginV+'px');
   document.documentElement.style.setProperty('--pnl-pct-margin',cfg.pnlPctMarginV+'px');
   document.documentElement.style.setProperty('--tax-row-margin',cfg.taxRowMarginV+'px');
+  document.documentElement.style.setProperty('--after-tax-offset-y',(cfg.afterTaxOffsetY||0)+'px');
+  document.documentElement.style.setProperty('--margin-offset-y',(cfg.marginOffsetY||0)+'px');
   document.documentElement.style.setProperty('--pnl-pct-size',cfg.sizePnlPct+'px');
   document.documentElement.style.setProperty('--pnl-pct-color',cfg.colorPnlPct);
   // フッター縦余白
@@ -547,6 +589,34 @@ function recalc(){
   var base=parseFloat(cfg.baseAsset)||0;
   var costEl=document.getElementById('tot-cost');
   costEl.style.color=(base>0&&t.cost>base)?cfg.colorCostWarn:cfg.colorCost;
+  // 余力計算
+  var marginEl=document.getElementById('margin-val');
+  if(marginEl){
+    if(base>0){
+      var marginVal=base-t.cost;
+      marginEl.textContent=fmtFull(marginVal,0);
+      marginEl.style.color=cfg.colorMargin;
+      marginEl.style.fontSize=(cfg.sizeMargin||16)+'px';
+    }else{
+      marginEl.textContent='—';
+      marginEl.style.color=cfg.colorMargin;
+    }
+  }
+  // MAX株数（各行に表示）
+  var rowItems=document.querySelectorAll('.row-item');
+  rowItems.forEach(function(item,i){
+    var maxSpan=item.querySelector('.row-max');
+    var p=parseFloat(rows[i]&&rows[i].price);
+    var marginAmt=(base>0)?(base-t.cost):null;
+    if(maxSpan&&marginAmt!==null&&isFinite(p)&&p>0&&marginAmt>0){
+      var maxQty=Math.floor(marginAmt/p);
+      maxSpan.textContent='MAX '+fmt(maxQty,0);
+      maxSpan.style.color=cfg.colorMax;
+      maxSpan.style.fontSize=(cfg.sizeMax||10)+'px';
+    }else if(maxSpan){
+      maxSpan.textContent='';
+    }
+  });
   var cur=getActivePrice();
   var pnlAmtEl=document.getElementById('pnl-amt');
   var pnlPctEl=document.getElementById('pnl-pct');
@@ -560,7 +630,7 @@ function recalc(){
     var taxOn=document.getElementById('tax-on').checked;
     var taxRate=parseFloat(document.getElementById('tax-rate').value)/100;
     if(taxOn&&isFinite(taxRate)){
-      pnlAfterEl.textContent='¥'+fmtFull(pnl*(1-taxRate),0);
+      pnlAfterEl.textContent=fmtS(pnl*(1-taxRate));
       if(pnl>0){pnlAfterEl.className='tax-after';pnlAfterEl.style.color=cfg.colorAfterTax;}
       else{pnlAfterEl.className='tax-after';pnlAfterEl.style.color=cfg.colorAfterTaxMinus;}
     }else{pnlAfterEl.textContent='';pnlAfterEl.style.color='';}
@@ -625,6 +695,7 @@ function render(){
       +'<div class="row-inputs">'
         +'<div class="field"><input type="number" inputmode="decimal" placeholder="単価" value="'+escHtml(row.price)+'" style="font-size:'+cfg.sizeRowInput+'px;color:'+cfg.colorRowInput+'" oninput="rows['+i+'].price=this.value;recalc()"></div>'
         +'<div class="field"><input type="number" inputmode="decimal" placeholder="数量" value="'+escHtml(row.qty)+'" style="font-size:'+cfg.sizeRowInput+'px;color:'+cfg.colorRowInput+'" oninput="rows['+i+'].qty=this.value;recalc()"></div>'
+        +'<span class="row-max" style="font-size:'+(cfg.sizeMax||10)+'px;color:'+(cfg.colorMax||'#444455')+';white-space:nowrap;align-self:center"></span>'
       +'</div>'
       +'<div style="flex:1;display:flex;flex-direction:column;align-items:flex-end;min-width:0;overflow:hidden">'
         +'<span class="subtotal-val" style="font-size:'+cfg.sizeSubtotal+'px;color:'+cfg.colorSubtotal+'">—</span>'
@@ -1091,6 +1162,9 @@ function buildSettingsUI(){
       {key:'colorQty',label:'合計数量',type:'color'},
       {key:'colorCost',label:'合計金額',type:'color'},
       {key:'colorCostWarn',label:'合計金額（警告）',type:'color'},
+      {key:'colorMargin',label:'余力',type:'color'},
+      {key:'colorMarginLabel',label:'余力 ラベル',type:'color'},
+      {key:'colorMax',label:'MAX株数',type:'color'},
       {key:'colorPnl',label:'損益',type:'color'},
       {key:'colorPnlPct',label:'損益％',type:'color'},
       {key:'colorAfterTax',label:'税引後（プラス）',type:'color'},
@@ -1105,11 +1179,15 @@ function buildSettingsUI(){
       {key:'colorRowPctPlus',label:'計算行 ％（プラス）',type:'color'},
       {key:'colorRowPctMinus',label:'計算行 ％（マイナス）',type:'color'},
       {key:'colorAsset',label:'資産合計',type:'color'},
+      {key:'colorAssetLabel',label:'資産合計 ラベル',type:'color'},
     ]},
     {title:'文字サイズ',items:[
       {key:'sizeAvg',label:'平均単価',type:'size',min:12,max:40},
       {key:'sizeQty',label:'合計数量',type:'size',min:12,max:40},
       {key:'sizeCost',label:'合計金額',type:'size',min:10,max:30},
+      {key:'sizeMargin',label:'余力',type:'size',min:10,max:30},
+      {key:'sizeMarginLabel',label:'余力 ラベル',type:'size',min:8,max:18},
+      {key:'sizeMax',label:'MAX株数',type:'size',min:8,max:18},
       {key:'sizePnl',label:'損益',type:'size',min:12,max:36},
       {key:'sizePnlPct',label:'損益％',type:'size',min:8,max:24},
       {key:'sizeAfterTax',label:'税引後',type:'size',min:12,max:40},
@@ -1120,6 +1198,7 @@ function buildSettingsUI(){
       {key:'sizeSubtotal',label:'計算行 小計',type:'size',min:8,max:24},
       {key:'sizeRowPct',label:'計算行 ％',type:'size',min:8,max:20},
       {key:'sizeAsset',label:'資産合計',type:'size',min:12,max:36},
+      {key:'sizeAssetLabel',label:'資産合計 ラベル',type:'size',min:8,max:16},
     ]},
     {title:'背景色',items:[
       {key:'bgApp',label:'アプリ背景',type:'color'},
@@ -1129,11 +1208,21 @@ function buildSettingsUI(){
     {title:'レイアウト',items:[
       {key:'summaryTop',label:'サマリー上余白',type:'size',min:0,max:40},
       {key:'avgOffsetX',label:'平均単価 左右位置',type:'size',min:-60,max:60},
+      {key:'avgOffsetY',label:'平均単価 上下位置',type:'size',min:-30,max:30},
       {key:'qtyOffsetX',label:'合計数量 左右位置',type:'size',min:-60,max:60},
-      {key:'dividerMargin',label:'仕切り線余白',type:'size',min:0,max:30},
+      {key:'qtyOffsetY',label:'合計数量 上下位置',type:'size',min:-30,max:30},
+      {key:'costOffsetY',label:'合計金額 上下位置',type:'size',min:-30,max:30},
+      {key:'marginLabelGap',label:'余力ラベル 上余白',type:'size',min:0,max:30},
+      {key:'marginLabelOffsetY',label:'余力ラベル 上下位置',type:'size',min:-20,max:20},
+      {key:'assetLabelTop',label:'資産合計ラベル 上位置',type:'size',min:-40,max:0},
+      {key:'dividerMarginTop',label:'仕切り線 上余白',type:'size',min:-20,max:30},
+      {key:'dividerMarginBottom',label:'仕切り線 下余白',type:'size',min:-20,max:30},
+      {key:'colorDivider',label:'仕切り線の色',type:'color'},
       {key:'pnlLabelMarginV',label:'ラベル行 下余白',type:'size',min:-10,max:30},
       {key:'pnlPctMarginV',label:'損益％ 上余白',type:'size',min:-10,max:30},
       {key:'taxRowMarginV',label:'税引後行 上余白',type:'size',min:0,max:30},
+      {key:'afterTaxOffsetY',label:'税引後 上下位置',type:'size',min:-20,max:20},
+      {key:'marginOffsetY',label:'余力 上下位置',type:'size',min:-20,max:20},
       {key:'footerPaddingV',label:'フッター縦余白',type:'size',min:2,max:30},
     ]},
     {title:'デフォルト',items:[
@@ -1141,6 +1230,8 @@ function buildSettingsUI(){
       {key:'baseAsset',label:'原資産額',type:'number',min:0,max:999999999,step:1},
     ]},
   ];
+
+  var isLocked=localStorage.getItem('kabu_settings_locked')==='1';
 
   sections.forEach(function(sec){
     var sd=document.createElement('div');sd.className='cfg-section';
@@ -1153,14 +1244,17 @@ function buildSettingsUI(){
       if(item.type==='color'){
         var inp=document.createElement('input');
         inp.type='color';inp.className='cfg-color';inp.value=cfg[item.key];
-        inp.addEventListener('input',function(){cfg[item.key]=inp.value;saveCfg();applyCfg();render();});
+        if(isLocked){inp.disabled=true;inp.style.opacity='0.3';}
+        inp.addEventListener('input',function(){if(isLocked)return;cfg[item.key]=inp.value;saveCfg();applyCfg();render();});
         ctrl.appendChild(inp);
       } else if(item.type==='size'){
         var wrap=document.createElement('div');wrap.className='cfg-size';
         var sl=document.createElement('input');
         sl.type='range';sl.min=item.min;sl.max=item.max;sl.value=cfg[item.key];
         var vl=document.createElement('span');vl.className='cfg-size-val';vl.textContent=cfg[item.key];
+        if(isLocked){sl.disabled=true;sl.style.opacity='0.3';}
         sl.addEventListener('input',function(){
+          if(isLocked)return;
           cfg[item.key]=parseInt(sl.value);vl.textContent=sl.value;saveCfg();applyCfg();render();
         });
         wrap.appendChild(sl);wrap.appendChild(vl);ctrl.appendChild(wrap);
@@ -1168,7 +1262,9 @@ function buildSettingsUI(){
         var ni=document.createElement('input');
         ni.type='number';ni.step=item.step||1;ni.min=item.min;ni.max=item.max;ni.value=cfg[item.key];
         ni.style.cssText='width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;-webkit-appearance:none;text-align:right';
+        if(isLocked){ni.disabled=true;ni.style.opacity='0.3';}
         ni.addEventListener('change',function(){
+          if(isLocked)return;
           cfg[item.key]=parseFloat(ni.value)||0;saveCfg();
           if(item.key==='defaultTaxRate'){
             document.getElementById('tax-rate').value=cfg.defaultTaxRate;
@@ -1183,13 +1279,35 @@ function buildSettingsUI(){
   });
 
   // リセットボタン
-  var rb=document.createElement('button');rb.className='settings-reset';rb.textContent='デフォルトに戻す';
+  // ボタン行
+  var btnRow=document.createElement('div');
+  btnRow.style.cssText='display:flex;gap:8px;margin-top:16px';
+
+  var rb=document.createElement('button');rb.className='settings-reset';
+  rb.style.cssText='flex:1;margin-top:0;padding:12px;background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--text3);font-size:13px;font-family:\'Noto Sans JP\',sans-serif;cursor:pointer';
+  rb.textContent='デフォルトに戻す';
   rb.addEventListener('click',function(){
     askConfirm('設定をデフォルトに戻しますか？',function(){
       cfg=Object.assign({},DEFAULTS);saveCfg();applyCfg();render();closeSettings();showToast('設定をリセットしました');
     });
   });
-  body.appendChild(rb);
+
+  var lb=document.createElement('button');lb.id='settings-lock-btn';
+  lb.style.cssText='padding:12px 16px;background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--text3);font-size:16px;cursor:pointer;flex-shrink:0';
+  var locked=localStorage.getItem('kabu_settings_locked')==='1';
+  lb.textContent=locked?'🔒':'🔓';
+  lb.title=locked?'設定ロック中':'設定ロック解除中';
+  lb.addEventListener('click',function(){
+    locked=!locked;
+    localStorage.setItem('kabu_settings_locked',locked?'1':'0');
+    lb.textContent=locked?'🔒':'🔓';
+    lb.title=locked?'設定ロック中':'設定ロック解除中';
+    showToast(locked?'設定をロックしました':'設定のロックを解除しました');
+    buildSettingsUI();
+  });
+
+  btnRow.appendChild(rb);btnRow.appendChild(lb);
+  body.appendChild(btnRow);
 }
 
 /* ── セッション保存・復元 ── */
