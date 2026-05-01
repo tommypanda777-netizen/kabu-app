@@ -1000,7 +1000,7 @@ function confirmSave(){
   var taxRate=parseFloat(document.getElementById('tax-rate').value);
   var activePrice=getActivePrice();
   var pnl=(isFinite(activePrice)&&t.qty>0)?(activePrice-t.avg)*t.qty:null;
-  var afterTax=(taxOn&&pnl!==null&&pnl>0&&isFinite(taxRate))?pnl*(1-taxRate/100):null;
+  var afterTax=(taxOn&&pnl!==null&&pnl>0&&isFinite(taxRate))?Math.trunc(pnl*(1-taxRate/100)):null;
   var s=getSaved();
   s.push({id:''+Date.now(),name:name,avg:t.avg,qty:t.qty,cost:t.cost,
     cur:isFinite(cur)?cur:null,
@@ -1032,7 +1032,7 @@ function overwriteSave(){
     var taxRate=parseFloat(document.getElementById('tax-rate').value);
     var activePrice=getActivePrice();
     var pnl=(isFinite(activePrice)&&t.qty>0)?(activePrice-t.avg)*t.qty:null;
-    var afterTax=(taxOn&&pnl!==null&&pnl>0&&isFinite(taxRate))?pnl*(1-taxRate/100):null;
+    var afterTax=(taxOn&&pnl!==null&&pnl>0&&isFinite(taxRate))?Math.trunc(pnl*(1-taxRate/100)):null;
     s[idx]=Object.assign({},s[idx],{avg:t.avg,qty:t.qty,cost:t.cost,
       cur:isFinite(cur)?cur:null,
       targetPrice:isFinite(tgt)?tgt:null,
@@ -1070,9 +1070,10 @@ function renderSaved(){
     var perShare=isFinite(e.avg)?e.avg:0;
     // 売却数量の初期値（保存されていればそれを使う）
     var sellQty=isFinite(e.sellQty)?e.sellQty:(isFinite(e.qty)?e.qty:0);
-    var pnlPerShare=isFinite(e.cur)?(e.cur-perShare):0;
+    var activePrice=isFinite(e.cur)&&e.priceMode!=='target'?e.cur:(isFinite(e.targetPrice)?e.targetPrice:e.cur);
+    var pnlPerShare=isFinite(activePrice)?(activePrice-perShare):0;
     var sellPnl=pnlPerShare*sellQty;
-    var sellAfterTax=sellPnl*(1-taxRate/100);
+    var sellAfterTax=(sellQty===e.qty&&e.afterTax!==null&&isFinite(e.afterTax))?Math.trunc(e.afterTax):Math.trunc(sellPnl*(1-taxRate/100));
     var base=parseFloat(cfg.baseAsset)||0;
     var sellAsset=base+sellAfterTax;
     return '<div class="saved-card" data-id="'+e.id+'">'
@@ -1110,7 +1111,8 @@ function onSellInput(id,field,val,el){
   var taxRate=isFinite(e.taxRate)?e.taxRate:20.315;
   var perShare=isFinite(e.avg)?e.avg:0;
   var base=parseFloat(cfg.baseAsset)||0;
-  var pnlPerShare=isFinite(e.cur)?(e.cur-perShare):0;
+  var activePrice=isFinite(e.cur)&&e.priceMode!=='target'?e.cur:(isFinite(e.targetPrice)?e.targetPrice:e.cur);
+  var pnlPerShare=isFinite(activePrice)?(activePrice-perShare):0;
   var n=parseFloat(val);
   if(!isFinite(n))return;
 
