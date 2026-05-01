@@ -1091,7 +1091,10 @@ function renderSaved(){
           +'<div class="saved-val-label">損益</div>'
           +'<div class="saved-val-num">'+fmtS(e.pnl)+'</div>'
           +'<div class="saved-val-label" style="margin-top:4px">税引売却益</div>'
-          +'<input type="number" class="saved-sell-input" data-id="'+e.id+'" data-field="sellAfterTax" value="'+Math.round(sellAfterTax)+'" style="font-size:'+cfg.savedSizeSellAfterTax+'px;color:'+(sellAfterTax>=0?cfg.savedColorSellAfterTax:cfg.savedColorSellAfterTaxMinus)+'" oninput="onSellInput(\''+e.id+'\',\'sellAfterTax\',this.value,this)">'
+          +'<div style="display:flex;align-items:center;gap:2px">'
+            +'<span class="saved-sell-sign" style="font-family:var(--mono);font-size:'+cfg.savedSizeSellAfterTax+'px;color:'+(sellAfterTax>=0?cfg.savedColorSellAfterTax:cfg.savedColorSellAfterTaxMinus)+'">'+(sellAfterTax>=0?'+':'−')+'</span>'
+            +'<input type="number" class="saved-sell-input" data-id="'+e.id+'" data-field="sellAfterTax" value="'+Math.abs(Math.round(sellAfterTax))+'" style="flex:1;font-size:'+cfg.savedSizeSellAfterTax+'px;color:'+(sellAfterTax>=0?cfg.savedColorSellAfterTax:cfg.savedColorSellAfterTaxMinus)+'" oninput="onSellInput(\''+e.id+'\',\'sellAfterTax\',this.value,this)">'
+          +'</div>'
         +'</div>'
         +'<div class="saved-val-item">'
           +'<div class="saved-val-label">税引後</div>'
@@ -1126,7 +1129,10 @@ function onSellInput(id,field,val,el){
     sellAfterTax=pnlPerShare*sellQty*(1-taxRate/100);
     sellAsset=base+sellAfterTax;
   } else if(field==='sellAfterTax'){
-    sellAfterTax=n;
+    // 入力は絶対値なので符号ラベルの符号を掛ける
+    var sign=el.parentNode?el.parentNode.querySelector('.saved-sell-sign'):null;
+    var signVal=(sign&&sign.textContent==='−')?-1:1;
+    sellAfterTax=n*signVal;
     sellQty=(pnlPerShare!==0)?Math.round(sellAfterTax/((1-taxRate/100)*pnlPerShare)):0;
     sellAsset=base+sellAfterTax;
   } else if(field==='sellAsset'){
@@ -1138,8 +1144,10 @@ function onSellInput(id,field,val,el){
   // 入力中のフィールド以外を更新
   if(field!=='sellQty')inputs[0].value=Math.round(sellQty);
   if(field!=='sellAfterTax'){
-    inputs[1].value=Math.round(sellAfterTax);
+    inputs[1].value=Math.abs(Math.round(sellAfterTax));
     inputs[1].style.color=sellAfterTax>=0?cfg.savedColorSellAfterTax:cfg.savedColorSellAfterTaxMinus;
+    var sign=inputs[1].parentNode?inputs[1].parentNode.querySelector('.saved-sell-sign'):null;
+    if(sign){sign.textContent=sellAfterTax>=0?'+':'−';sign.style.color=sellAfterTax>=0?cfg.savedColorSellAfterTax:cfg.savedColorSellAfterTaxMinus;}
   }
   if(field!=='sellAsset')inputs[2].value=Math.round(sellAsset);
 
