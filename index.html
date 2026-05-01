@@ -126,6 +126,7 @@ header{display:none}
 .saved-val-label{font-size:10px;color:var(--text3);margin-bottom:3px}
 .saved-val-num{font-family:var(--mono);font-size:13px;color:var(--text)}
 .saved-val-num.profit{color:var(--green)}.saved-val-num.loss{color:var(--red)}
+.saved-sell-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 4px;font-family:var(--mono);outline:none;-webkit-appearance:none;text-align:right;margin-top:2px}
 
 /* オーバーレイ共通 */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;padding:20px}
@@ -296,6 +297,11 @@ header{display:none}
       </div>
       <div id="saved-list"></div>
     </div>
+    <div class="note-footer">
+      <button class="gear-btn" onclick="openSavedSettings()">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.01 7.01 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      </button>
+    </div>
   </div>
 
   <!-- ノートページ -->
@@ -332,6 +338,16 @@ header{display:none}
       <button class="save-box-cancel" onclick="closeSaveDialog()">キャンセル</button>
     </div>
   </div>
+</div>
+
+<!-- 保存タブ設定パネル -->
+<div class="settings-overlay" id="saved-settings-overlay" onclick="closeSavedSettings()"></div>
+<div class="settings-panel" id="saved-settings-panel">
+  <div class="settings-header">
+    <h2>保存タブ設定</h2>
+    <button class="settings-close" onclick="closeSavedSettings()">×</button>
+  </div>
+  <div class="settings-body" id="saved-settings-body"></div>
 </div>
 
 <!-- ノート設定パネル -->
@@ -429,7 +445,15 @@ var DEFAULTS={
   footerPaddingV:15,
   // 税率・原資産額
   defaultTaxRate:20.315,
-  baseAsset:0
+  baseAsset:0,
+  // 保存タブ
+  savedColorSellQty:'#e8e8ea',
+  savedSizeSellQty:13,
+  savedColorSellAfterTax:'#f06060',
+  savedColorSellAfterTaxMinus:'#3ecf7a',
+  savedSizeSellAfterTax:13,
+  savedColorSellAsset:'#ffffc8',
+  savedSizeSellAsset:13
 };
 var cfg={};
 
@@ -1042,17 +1066,125 @@ function renderSaved(){
   var el=document.getElementById('saved-list');
   if(!s.length){el.innerHTML='<div class="saved-empty">保存されたパターンがありません</div>';return;}
   el.innerHTML=s.map(function(e){
+    var taxRate=isFinite(e.taxRate)?e.taxRate:20.315;
+    var perShare=isFinite(e.avg)?e.avg:0;
+    // 売却数量の初期値（保存されていればそれを使う）
+    var sellQty=isFinite(e.sellQty)?e.sellQty:(isFinite(e.qty)?e.qty:0);
+    var pnlPerShare=isFinite(e.cur)?(e.cur-perShare):0;
+    var sellPnl=pnlPerShare*sellQty;
+    var sellAfterTax=sellPnl*(1-taxRate/100);
+    var base=parseFloat(cfg.baseAsset)||0;
+    var sellAsset=base+sellAfterTax;
     return '<div class="saved-card" data-id="'+e.id+'">'
       +'<div class="saved-card-header"><div style="display:flex;align-items:center;min-width:0"><span class="drag-handle">⠿</span><span class="saved-name">'+escHtml(e.name)+'</span></div>'
       +'<div class="saved-actions"><button class="saved-load" onclick="loadSaved(\''+e.id+'\')">読込</button><button class="saved-del" onclick="delSaved(\''+e.id+'\')">×</button></div></div>'
       +'<div class="saved-vals">'
         +'<div class="saved-val-item"><div class="saved-val-label">平均単価</div><div class="saved-val-num">'+fmt(e.avg,0)+'</div></div>'
-        +'<div class="saved-val-item"><div class="saved-val-label">合計数量</div><div class="saved-val-num">'+fmt(e.qty,0)+'</div></div>'
-        +'<div class="saved-val-item"><div class="saved-val-label">損益</div><div class="saved-val-num">'+fmtS(e.pnl)+'</div></div>'
-        +'<div class="saved-val-item"><div class="saved-val-label">税引後</div><div class="saved-val-num '+(e.afterTax===null?'':e.afterTax>=0?'loss':'profit')+'">'+(e.afterTax!==null?fmtS(e.afterTax):'—')+'</div></div>'
+        +'<div class="saved-val-item">'
+          +'<div class="saved-val-label">合計数量</div>'
+          +'<div class="saved-val-num">'+fmt(e.qty,0)+'</div>'
+          +'<div class="saved-val-label" style="margin-top:4px">売却数量</div>'
+          +'<input type="number" class="saved-sell-input" data-id="'+e.id+'" data-field="sellQty" value="'+sellQty+'" style="font-size:'+cfg.savedSizeSellQty+'px;color:'+cfg.savedColorSellQty+'" oninput="onSellInput(\''+e.id+'\',\'sellQty\',this.value,this)">'
+        +'</div>'
+        +'<div class="saved-val-item">'
+          +'<div class="saved-val-label">損益</div>'
+          +'<div class="saved-val-num">'+fmtS(e.pnl)+'</div>'
+          +'<div class="saved-val-label" style="margin-top:4px">税引売却益</div>'
+          +'<input type="number" class="saved-sell-input" data-id="'+e.id+'" data-field="sellAfterTax" value="'+Math.round(sellAfterTax)+'" style="font-size:'+cfg.savedSizeSellAfterTax+'px;color:'+(sellAfterTax>=0?cfg.savedColorSellAfterTax:cfg.savedColorSellAfterTaxMinus)+'" oninput="onSellInput(\''+e.id+'\',\'sellAfterTax\',this.value,this)">'
+        +'</div>'
+        +'<div class="saved-val-item">'
+          +'<div class="saved-val-label">税引後</div>'
+          +'<div class="saved-val-num '+(e.afterTax===null?'':e.afterTax>=0?'loss':'profit')+'">'+(e.afterTax!==null?fmtS(e.afterTax):'—')+'</div>'
+          +'<div class="saved-val-label" style="margin-top:4px">資産合計</div>'
+          +'<input type="number" class="saved-sell-input" data-id="'+e.id+'" data-field="sellAsset" value="'+Math.round(sellAsset)+'" style="font-size:'+cfg.savedSizeSellAsset+'px;color:'+cfg.savedColorSellAsset+'" oninput="onSellInput(\''+e.id+'\',\'sellAsset\',this.value,this)">'
+        +'</div>'
       +'</div></div>';
   }).join('');
   initDrag();
+}
+
+function onSellInput(id,field,val,el){
+  var s=getSaved();
+  var e=s.find(function(x){return x.id===id;});
+  if(!e)return;
+  var taxRate=isFinite(e.taxRate)?e.taxRate:20.315;
+  var perShare=isFinite(e.avg)?e.avg:0;
+  var base=parseFloat(cfg.baseAsset)||0;
+  var pnlPerShare=isFinite(e.cur)?(e.cur-perShare):0;
+  var n=parseFloat(val);
+  if(!isFinite(n))return;
+
+  var card=el.closest('.saved-card');
+  var inputs=card.querySelectorAll('.saved-sell-input');
+  // inputs[0]=sellQty, inputs[1]=sellAfterTax, inputs[2]=sellAsset
+
+  var sellQty,sellAfterTax,sellAsset;
+  if(field==='sellQty'){
+    sellQty=n;
+    sellAfterTax=pnlPerShare*sellQty*(1-taxRate/100);
+    sellAsset=base+sellAfterTax;
+  } else if(field==='sellAfterTax'){
+    sellAfterTax=n;
+    sellQty=(pnlPerShare!==0)?Math.round(sellAfterTax/((1-taxRate/100)*pnlPerShare)):0;
+    sellAsset=base+sellAfterTax;
+  } else if(field==='sellAsset'){
+    sellAsset=n;
+    sellAfterTax=sellAsset-base;
+    sellQty=(pnlPerShare!==0)?Math.round(sellAfterTax/((1-taxRate/100)*pnlPerShare)):0;
+  }
+
+  // 入力中のフィールド以外を更新
+  if(field!=='sellQty')inputs[0].value=Math.round(sellQty);
+  if(field!=='sellAfterTax'){
+    inputs[1].value=Math.round(sellAfterTax);
+    inputs[1].style.color=sellAfterTax>=0?cfg.savedColorSellAfterTax:cfg.savedColorSellAfterTaxMinus;
+  }
+  if(field!=='sellAsset')inputs[2].value=Math.round(sellAsset);
+
+  // sellQtyをlocalStorageに保存
+  e.sellQty=Math.round(sellQty);
+  setSaved(s);
+}
+
+function openSavedSettings(){
+  buildSavedSettingsUI();
+  document.getElementById('saved-settings-overlay').classList.add('open');
+  document.getElementById('saved-settings-panel').classList.add('open');
+}
+function closeSavedSettings(){
+  document.getElementById('saved-settings-overlay').classList.remove('open');
+  document.getElementById('saved-settings-panel').classList.remove('open');
+}
+
+function buildSavedSettingsUI(){
+  var body=document.getElementById('saved-settings-body');
+  body.innerHTML='';
+  var items=[
+    {key:'savedColorSellQty',label:'売却数量 文字色',type:'color'},
+    {key:'savedSizeSellQty',label:'売却数量 文字サイズ',type:'size',min:8,max:24},
+    {key:'savedColorSellAfterTax',label:'税引売却益（プラス）',type:'color'},
+    {key:'savedColorSellAfterTaxMinus',label:'税引売却益（マイナス）',type:'color'},
+    {key:'savedSizeSellAfterTax',label:'税引売却益 文字サイズ',type:'size',min:8,max:24},
+    {key:'savedColorSellAsset',label:'資産合計 文字色',type:'color'},
+    {key:'savedSizeSellAsset',label:'資産合計 文字サイズ',type:'size',min:8,max:24},
+  ];
+  items.forEach(function(item){
+    var row=document.createElement('div');row.className='cfg-row';
+    var lbl=document.createElement('span');lbl.className='cfg-label';lbl.textContent=item.label;
+    var ctrl=document.createElement('div');ctrl.className='cfg-ctrl';
+    if(item.type==='color'){
+      var inp=document.createElement('input');inp.type='color';inp.className='cfg-color';inp.value=cfg[item.key];
+      inp.addEventListener('input',function(){cfg[item.key]=inp.value;saveCfg();renderSaved();});
+      ctrl.appendChild(inp);
+    } else {
+      var wrap=document.createElement('div');wrap.className='cfg-size';
+      var sl=document.createElement('input');sl.type='range';sl.min=item.min;sl.max=item.max;sl.value=cfg[item.key];
+      var vl=document.createElement('span');vl.className='cfg-size-val';vl.textContent=cfg[item.key];
+      sl.addEventListener('input',function(){cfg[item.key]=parseInt(sl.value);vl.textContent=sl.value;saveCfg();renderSaved();});
+      wrap.appendChild(sl);wrap.appendChild(vl);ctrl.appendChild(wrap);
+    }
+    row.appendChild(lbl);row.appendChild(ctrl);body.appendChild(row);
+  });
 }
 
 function loadSaved(id){
