@@ -1073,7 +1073,7 @@ function renderSaved(){
     var activePrice=isFinite(e.cur)&&e.priceMode!=='target'?e.cur:(isFinite(e.targetPrice)?e.targetPrice:e.cur);
     var pnlPerShare=isFinite(activePrice)?(activePrice-perShare):0;
     var sellPnl=pnlPerShare*sellQty;
-    var sellAfterTax=(sellQty===e.qty&&e.afterTax!==null&&isFinite(e.afterTax))?Math.trunc(e.afterTax):Math.trunc(sellPnl*(1-taxRate/100));
+    var sellAfterTax=(sellQty===e.qty&&e.afterTax!==null&&isFinite(e.afterTax))?Math.round(e.afterTax):Math.round(sellPnl*(1-taxRate/100));
     var base=parseFloat(cfg.baseAsset)||0;
     var sellAsset=base+sellAfterTax;
     return '<div class="saved-card" data-id="'+e.id+'">'
